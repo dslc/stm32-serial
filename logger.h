@@ -15,5 +15,6 @@ typedef struct {
 } uart_buf_t;
 
 void log_message(const char *msg);
+void log_tx_callback(void);
 
 #endif /* LOGGER_H_ */
