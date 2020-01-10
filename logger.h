@@ -8,12 +8,9 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
-typedef struct {
-	int pos;
-	int len;
-	char data[128];
-} uart_buf_t;
+#include "stm32f3xx_ll_usart.h"
 
+void log_init(USART_TypeDef *usart);
 void log_message(const char *msg);
 void log_tx_callback(void);
 
