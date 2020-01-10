@@ -13,7 +13,7 @@ typedef struct {
     char data[128];
 } uart_buf_t;
 
-volatile uart_buf_t tx_buf;
+static volatile uart_buf_t tx_buf;
 static USART_TypeDef *usart;
 
 void log_init(USART_TypeDef *_usart) {
