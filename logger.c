@@ -27,6 +27,7 @@ void log_message(const char *msg) {
     tx_buf.len = len;
     tx_buf.pos = 0;
     LL_USART_EnableIT_TXE(usart);
+    while (LL_USART_IsEnabledIT_TXE(usart)) {};
 }
 
 void log_tx_callback(void) {
