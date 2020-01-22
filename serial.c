@@ -19,6 +19,7 @@ static USART_TypeDef *usart;
 
 void serial_init(USART_TypeDef *_usart) {
     usart = _usart;
+    LL_USART_EnableIT_RXNE(usart);
 }
 
 void serial_print(const char *msg) {
