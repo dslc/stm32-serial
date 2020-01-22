@@ -13,5 +13,6 @@
 void serial_init(USART_TypeDef *usart);
 void serial_print(const char *msg);
 void serial_tx_callback(void);
+void serial_rx_callback(void);
 
 #endif /* SERIAL_H_ */

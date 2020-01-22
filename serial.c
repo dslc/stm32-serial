@@ -14,6 +14,7 @@ typedef struct {
 } uart_buf_t;
 
 static volatile uart_buf_t tx_buf;
+static volatile uart_buf_t rx_buf;
 static USART_TypeDef *usart;
 
 void serial_init(USART_TypeDef *_usart) {
@@ -30,6 +31,13 @@ void serial_print(const char *msg) {
     while (LL_USART_IsEnabledIT_TXE(usart)) {};
 }
 
+void serial_read_bytes(char *buf, int max_len) {
+    int len = rx_buf.pos > max_len ? max_len : rx_buf.pos;
+    memcpy(buf, rx_buf.data, len);
+    rx_buf.pos = 0;
+    return len;
+}
+
 void serial_tx_callback(void) {
     if (LL_USART_IsEnabledIT_TXE(usart) && LL_USART_IsActiveFlag_TXE(usart)) {
         uint8_t byte = tx_buf.data[tx_buf.pos++];
@@ -37,6 +45,15 @@ void serial_tx_callback(void) {
 
         if (tx_buf.pos >= tx_buf.len) {
             LL_USART_DisableIT_TXE(usart);
+        }
+    }
+}
+
+void serial_rx_callback(void) {
+    if (LL_USART_IsEnabledIT_RXNE(usart) && LL_USART_IsActiveFlag_RXNE(usart)) {
+        uint8_t byte = LL_USART_ReceiveData8(usart);
+        if (rx_buf.pos < sizeof(rx_buf.data)) {
+            rx_buf.data[rx_buf.pos++] = byte;
         }
     }
 }
