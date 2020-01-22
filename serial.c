@@ -7,58 +7,79 @@
 
 #include "serial.h"
 
+#ifndef SERIAL_TX_BUF_SIZE
+#define SERIAL_TX_BUF_SIZE 128
+#endif
+
+#ifndef SERIAL_RX_BUF_SIZE
+#define SERIAL_RX_BUF_SIZE 128
+#endif
+
 typedef struct {
     int pos;
     int len;
-    char data[128];
-} uart_buf_t;
+    char data[SERIAL_RX_BUF_SIZE];
+} serial_tx_buf_t;
 
-static volatile uart_buf_t tx_buf;
-static volatile uart_buf_t rx_buf;
-static USART_TypeDef *usart;
+typedef struct {
+    int pos;
+    char data[SERIAL_RX_BUF_SIZE];
+} serial_rx_buf_t;
+
+typedef struct {
+    volatile serial_tx_buf_t tx_buf;
+    volatile serial_rx_buf_t rx_buf;
+    USART_TypeDef *usart;
+} serial_t;
+
+static serial_t serial;
 
 void serial_init(USART_TypeDef *_usart) {
-    usart = _usart;
-    LL_USART_EnableIT_RXNE(usart);
+    serial.usart = _usart;
+    LL_USART_EnableIT_RXNE(serial.usart);
 }
 
 void serial_print(const char *msg) {
+    serial_tx_buf_t *buf = &serial.tx_buf;
     int len = strlen(msg);
-    len = len > sizeof(tx_buf.data) ? sizeof(tx_buf.data) : len;
-    memcpy(tx_buf.data, msg, len);
-    tx_buf.len = len;
-    tx_buf.pos = 0;
-    LL_USART_EnableIT_TXE(usart);
-    while (LL_USART_IsEnabledIT_TXE(usart)) {};
+    len = len > sizeof(buf->data) ? sizeof(buf->data) : len;
+    memcpy(buf->data, msg, len);
+    buf->len = len;
+    buf->pos = 0;
+    LL_USART_EnableIT_TXE(serial.usart);
+    while (LL_USART_IsEnabledIT_TXE(serial.usart)) {};
 }
 
 int serial_available(void) {
-    return rx_buf.pos;
+    return serial.rx_buf.pos;
 }
 
-int serial_read_bytes(char *buf, int max_len) {
-    int len = rx_buf.pos > max_len ? max_len : rx_buf.pos;
-    memcpy(buf, rx_buf.data, len);
-    rx_buf.pos = 0;
+int serial_read_bytes(char *dest, int max_len) {
+    serial_rx_buf_t *buf = &serial.rx_buf;
+    int len = buf->pos > max_len ? max_len : buf->pos;
+    memcpy(dest, buf->data, len);
+    buf->pos = 0;
     return len;
 }
 
 void serial_tx_callback(void) {
-    if (LL_USART_IsEnabledIT_TXE(usart) && LL_USART_IsActiveFlag_TXE(usart)) {
-        uint8_t byte = tx_buf.data[tx_buf.pos++];
-        LL_USART_TransmitData8(usart, byte);
+    if (LL_USART_IsEnabledIT_TXE(serial.usart) && LL_USART_IsActiveFlag_TXE(serial.usart)) {
+        serial_tx_buf_t *buf = &serial.tx_buf;
+        uint8_t byte = buf->data[buf->pos++];
+        LL_USART_TransmitData8(serial.usart, byte);
 
-        if (tx_buf.pos >= tx_buf.len) {
-            LL_USART_DisableIT_TXE(usart);
+        if (buf->pos >= buf->len) {
+            LL_USART_DisableIT_TXE(serial.usart);
         }
     }
 }
 
 void serial_rx_callback(void) {
-    if (LL_USART_IsEnabledIT_RXNE(usart) && LL_USART_IsActiveFlag_RXNE(usart)) {
-        uint8_t byte = LL_USART_ReceiveData8(usart);
-        if (rx_buf.pos < sizeof(rx_buf.data)) {
-            rx_buf.data[rx_buf.pos++] = byte;
+    if (LL_USART_IsEnabledIT_RXNE(serial.usart) && LL_USART_IsActiveFlag_RXNE(serial.usart)) {
+        serial_rx_buf_t *buf = &serial.rx_buf;
+        uint8_t byte = LL_USART_ReceiveData8(serial.usart);
+        if (buf->pos < sizeof(buf->data)) {
+            buf->data[buf->pos++] = byte;
         }
     }
 }
