@@ -50,8 +50,8 @@ serial_t *serial_init(USART_TypeDef *_usart) {
     return s;
 }
 
-void serial_print(const char *msg) {
-    serial_tx_buf_t *buf = &serial.tx_buf;
+void serial_print(serial_t *serial, const char *msg) {
+    serial_tx_buf_t *buf = &(serial->tx_buf);
     int len = strlen(msg);
     len = len > sizeof(buf->data) ? sizeof(buf->data) : len;
     memcpy(buf->data, msg, len);
@@ -61,34 +61,34 @@ void serial_print(const char *msg) {
     while (LL_USART_IsEnabledIT_TXE(serial.usart)) {};
 }
 
-int serial_available(void) {
-    return serial.rx_buf.pos;
+int serial_available(serial_t *serial) {
+    return serial->rx_buf.pos;
 }
 
-int serial_read_bytes(char *dest, int max_len) {
-    serial_rx_buf_t *buf = &serial.rx_buf;
+int serial_read_bytes(serial_t *serial, char *dest, int max_len) {
+    serial_rx_buf_t *buf = &(serial->rx_buf);
     int len = buf->pos > max_len ? max_len : buf->pos;
     memcpy(dest, buf->data, len);
     buf->pos = 0;
     return len;
 }
 
-void serial_tx_callback(void) {
-    if (LL_USART_IsEnabledIT_TXE(serial.usart) && LL_USART_IsActiveFlag_TXE(serial.usart)) {
-        serial_tx_buf_t *buf = &serial.tx_buf;
+void serial_tx_callback(serial_t *serial) {
+    if (LL_USART_IsEnabledIT_TXE(serial->usart) && LL_USART_IsActiveFlag_TXE(serial->usart)) {
+        serial_tx_buf_t *buf = &serial->tx_buf;
         uint8_t byte = buf->data[buf->pos++];
-        LL_USART_TransmitData8(serial.usart, byte);
+        LL_USART_TransmitData8(serial->usart, byte);
 
         if (buf->pos >= buf->len) {
-            LL_USART_DisableIT_TXE(serial.usart);
+            LL_USART_DisableIT_TXE(serial->usart);
         }
     }
 }
 
-void serial_rx_callback(void) {
-    if (LL_USART_IsEnabledIT_RXNE(serial.usart) && LL_USART_IsActiveFlag_RXNE(serial.usart)) {
-        serial_rx_buf_t *buf = &serial.rx_buf;
-        uint8_t byte = LL_USART_ReceiveData8(serial.usart);
+void serial_rx_callback(serial_t *serial) {
+    if (LL_USART_IsEnabledIT_RXNE(serial->usart) && LL_USART_IsActiveFlag_RXNE(serial->usart)) {
+        serial_rx_buf_t *buf = &(serial->rx_buf);
+        uint8_t byte = LL_USART_ReceiveData8(serial->usart);
         if (buf->pos < sizeof(buf->data)) {
             buf->data[buf->pos++] = byte;
         }
