@@ -77,6 +77,18 @@ void serial_println(serial_t *serial, const char *msg) {
     on_tx_ready(serial);
 }
 
+void serial_printrln(serial_t *serial, const char *msg) {
+    serial_tx_buf_t *buf = &(serial->tx_buf);
+    int len = strlen(msg);
+    len = len > sizeof(buf->data) - 2 ? sizeof(buf->data) - 2 : len;
+    memcpy(buf->data, msg, len);
+    buf->data[len++] = '\r';
+    buf->data[len++] = '\n';
+    buf->len = len;
+    buf->pos = 0;
+    on_tx_ready(serial);
+}
+
 int serial_available(serial_t *serial) {
     return serial->rx_buf.pos;
 }
