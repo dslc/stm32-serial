@@ -51,6 +51,11 @@ serial_t *serial_init(USART_TypeDef *_usart) {
     return s;
 }
 
+static void on_tx_ready(serial_t *serial) {
+    LL_USART_EnableIT_TXE(serial->usart);
+    while (LL_USART_IsEnabledIT_TXE(serial->usart)) {};
+}
+
 void serial_print(serial_t *serial, const char *msg) {
     serial_tx_buf_t *buf = &(serial->tx_buf);
     int len = strlen(msg);
@@ -58,8 +63,18 @@ void serial_print(serial_t *serial, const char *msg) {
     memcpy(buf->data, msg, len);
     buf->len = len;
     buf->pos = 0;
-    LL_USART_EnableIT_TXE(serial->usart);
-    while (LL_USART_IsEnabledIT_TXE(serial->usart)) {};
+    on_tx_ready(serial);
+}
+
+void serial_println(serial_t *serial, const char *msg) {
+    serial_tx_buf_t *buf = &(serial->tx_buf);
+    int len = strlen(msg);
+    len = len > sizeof(buf->data) - 1 ? sizeof(buf->data) - 1 : len;
+    memcpy(buf->data, msg, len);
+    buf->data[len++] = '\n';
+    buf->len = len;
+    buf->pos = 0;
+    on_tx_ready(serial);
 }
 
 int serial_available(serial_t *serial) {
