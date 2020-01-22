@@ -1,11 +1,11 @@
 /*
- * logger.c
+ * serial.c
  *
  *  Created on: 10 Jan 2020
  *      Author: david
  */
 
-#include "logger.h"
+#include "serial.h"
 
 typedef struct {
     int pos;
@@ -16,11 +16,11 @@ typedef struct {
 static volatile uart_buf_t tx_buf;
 static USART_TypeDef *usart;
 
-void log_init(USART_TypeDef *_usart) {
+void serial_init(USART_TypeDef *_usart) {
     usart = _usart;
 }
 
-void log_message(const char *msg) {
+void serial_print(const char *msg) {
     int len = strlen(msg);
     len = len > sizeof(tx_buf.data) ? sizeof(tx_buf.data) : len;
     memcpy(tx_buf.data, msg, len);
@@ -30,7 +30,7 @@ void log_message(const char *msg) {
     while (LL_USART_IsEnabledIT_TXE(usart)) {};
 }
 
-void log_tx_callback(void) {
+void serial_tx_callback(void) {
     if (LL_USART_IsEnabledIT_TXE(usart) && LL_USART_IsActiveFlag_TXE(usart)) {
         uint8_t byte = tx_buf.data[tx_buf.pos++];
         LL_USART_TransmitData8(usart, byte);
