@@ -15,6 +15,10 @@
 #define SERIAL_RX_BUF_SIZE 128
 #endif
 
+#ifndef SERIAL_N_INTERFACES
+#define SERIAL_N_INTERFACES 2
+#endif
+
 typedef struct {
     int pos;
     int len;
@@ -26,17 +30,24 @@ typedef struct {
     char data[SERIAL_RX_BUF_SIZE];
 } serial_rx_buf_t;
 
-typedef struct {
+struct {
     volatile serial_tx_buf_t tx_buf;
     volatile serial_rx_buf_t rx_buf;
     USART_TypeDef *usart;
-} serial_t;
+} serial;
 
-static serial_t serial;
+static serial_t ifs[SERIAL_N_INTERFACES];
+static uint8_t next_if = 0; // next interface
 
-void serial_init(USART_TypeDef *_usart) {
-    serial.usart = _usart;
-    LL_USART_EnableIT_RXNE(serial.usart);
+serial_t *serial_init(USART_TypeDef *_usart) {
+    if (next_if >= SERIAL_N_INTERFACES) {
+        return NULL;
+    }
+    serial_t *s = &ifs[next_if++];
+    s->usart = _usart;
+    LL_USART_EnableIT_RXNE(s->usart);
+
+    return s;
 }
 
 void serial_print(const char *msg) {
