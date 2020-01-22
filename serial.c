@@ -30,11 +30,11 @@ typedef struct {
     char data[SERIAL_RX_BUF_SIZE];
 } serial_rx_buf_t;
 
-struct {
+struct serial {
     volatile serial_tx_buf_t tx_buf;
     volatile serial_rx_buf_t rx_buf;
     USART_TypeDef *usart;
-} serial;
+};
 
 static serial_t ifs[SERIAL_N_INTERFACES];
 static uint8_t next_if = 0; // next interface
