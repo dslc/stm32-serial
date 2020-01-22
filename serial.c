@@ -6,6 +6,7 @@
  */
 
 #include "serial.h"
+#include <string.h>
 
 #ifndef SERIAL_TX_BUF_SIZE
 #define SERIAL_TX_BUF_SIZE 128
@@ -57,8 +58,8 @@ void serial_print(serial_t *serial, const char *msg) {
     memcpy(buf->data, msg, len);
     buf->len = len;
     buf->pos = 0;
-    LL_USART_EnableIT_TXE(serial.usart);
-    while (LL_USART_IsEnabledIT_TXE(serial.usart)) {};
+    LL_USART_EnableIT_TXE(serial->usart);
+    while (LL_USART_IsEnabledIT_TXE(serial->usart)) {};
 }
 
 int serial_available(serial_t *serial) {
