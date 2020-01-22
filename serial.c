@@ -35,6 +35,7 @@ struct serial {
     volatile serial_tx_buf_t tx_buf;
     volatile serial_rx_buf_t rx_buf;
     USART_TypeDef *usart;
+    serial_line_ending_t line_ending;
 };
 
 static serial_t ifs[SERIAL_N_INTERFACES];
@@ -46,6 +47,7 @@ serial_t *serial_init(USART_TypeDef *_usart) {
     }
     serial_t *s = &ifs[next_if++];
     s->usart = _usart;
+    s->line_ending = SERIAL_LINE_ENDING_LF;
     LL_USART_EnableIT_RXNE(s->usart);
 
     return s;
@@ -69,24 +71,21 @@ void serial_print(serial_t *serial, const char *msg) {
 void serial_println(serial_t *serial, const char *msg) {
     serial_tx_buf_t *buf = &(serial->tx_buf);
     int len = strlen(msg);
-    len = len > sizeof(buf->data) - 1 ? sizeof(buf->data) - 1 : len;
+    len = len > sizeof(buf->data) - 2 ? sizeof(buf->data) - 2 : len;
     memcpy(buf->data, msg, len);
-    buf->data[len++] = '\n';
+    if (serial->line_ending == SERIAL_LINE_ENDING_CR || serial->line_ending == SERIAL_LINE_ENDING_CRLF) {
+        buf->data[len++] = '\r';
+    }
+    if (serial->line_ending == SERIAL_LINE_ENDING_LF || serial->line_ending == SERIAL_LINE_ENDING_CRLF) {
+        buf->data[len++] = '\n';
+    }
     buf->len = len;
     buf->pos = 0;
     on_tx_ready(serial);
 }
 
-void serial_printrln(serial_t *serial, const char *msg) {
-    serial_tx_buf_t *buf = &(serial->tx_buf);
-    int len = strlen(msg);
-    len = len > sizeof(buf->data) - 2 ? sizeof(buf->data) - 2 : len;
-    memcpy(buf->data, msg, len);
-    buf->data[len++] = '\r';
-    buf->data[len++] = '\n';
-    buf->len = len;
-    buf->pos = 0;
-    on_tx_ready(serial);
+void serial_set_line_ending(serial_t *serial, serial_line_ending_t ending) {
+    serial->line_ending = ending;
 }
 
 int serial_available(serial_t *serial) {

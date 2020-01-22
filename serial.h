@@ -14,10 +14,17 @@ struct serial;
 
 typedef struct serial serial_t;
 
+typedef enum {
+    SERIAL_LINE_ENDING_NONE,
+    SERIAL_LINE_ENDING_CR,
+    SERIAL_LINE_ENDING_LF,
+    SERIAL_LINE_ENDING_CRLF
+} serial_line_ending_t;
+
 serial_t *serial_init(USART_TypeDef *usart);
 void serial_print(serial_t *serial, const char *msg);
 void serial_println(serial_t *serial, const char *msg);
-void serial_printrln(serial_t *serial, const char *msg);
+void serial_set_line_ending(serial_t *serial, serial_line_ending_t ending);
 int serial_read_bytes(serial_t *serial, char *buf, int max_len);
 void serial_tx_callback(serial_t *serial);
 void serial_rx_callback(serial_t *serial);
