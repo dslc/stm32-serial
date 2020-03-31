@@ -69,19 +69,20 @@ void serial_print(serial_t *serial, const char *msg) {
 }
 
 void serial_println(serial_t *serial, const char *msg) {
-    serial_tx_buf_t *buf = &(serial->tx_buf);
-    int len = strlen(msg);
-    len = len > sizeof(buf->data) - 2 ? sizeof(buf->data) - 2 : len;
-    memcpy(buf->data, msg, len);
-    if (serial->line_ending == SERIAL_LINE_ENDING_CR || serial->line_ending == SERIAL_LINE_ENDING_CRLF) {
-        buf->data[len++] = '\r';
+    serial_print(serial, msg);
+    switch (serial->line_ending) {
+        case SERIAL_LINE_ENDING_LF:
+            serial_print(serial, "\n");
+            break;
+        case SERIAL_LINE_ENDING_CR:
+            serial_print(serial, "\r");
+            break;
+        case SERIAL_LINE_ENDING_CRLF:
+            serial_print(serial, "\r\n");
+            break;
+        default:
+            break;
     }
-    if (serial->line_ending == SERIAL_LINE_ENDING_LF || serial->line_ending == SERIAL_LINE_ENDING_CRLF) {
-        buf->data[len++] = '\n';
-    }
-    buf->len = len;
-    buf->pos = 0;
-    on_tx_ready(serial);
 }
 
 void serial_set_line_ending(serial_t *serial, serial_line_ending_t ending) {
