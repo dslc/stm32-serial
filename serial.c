@@ -121,5 +121,8 @@ void serial_rx_callback(serial_t *serial) {
             buf->data[buf->pos++] = byte;
         }
     }
+    if (LL_USART_IsActiveFlag_ORE(serial->usart)) {
+        LL_USART_ClearFlag_ORE(serial->usart);
+    }
 }
 
