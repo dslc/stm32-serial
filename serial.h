@@ -8,7 +8,14 @@
 #ifndef SERIAL_H_
 #define SERIAL_H_
 
+// Include the main.h header to ensure the macro for the relevant MCU has been defined
+#include "main.h"
+
+#ifdef STM32L1
+#include "stm32l1xx_ll_usart.h"
+#elif defined STM32F3
 #include "stm32f3xx_ll_usart.h"
+#endif
 
 struct serial;
 
