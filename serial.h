@@ -29,6 +29,7 @@ typedef enum {
 } serial_line_ending_t;
 
 serial_t *serial_init(USART_TypeDef *usart);
+void serial_set_baud_rate(serial_t *serial, uint32_t baud_rate);
 void serial_print(serial_t *serial, const char *msg);
 void serial_println(serial_t *serial, const char *msg);
 void serial_set_line_ending(serial_t *serial, serial_line_ending_t ending);

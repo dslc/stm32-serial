@@ -53,6 +53,8 @@ serial_t *serial_init(USART_TypeDef *_usart) {
     return s;
 }
 
+void serial_set_baud_rate(serial_t *serial, uint32_t baud_rate);
+
 static void on_tx_ready(serial_t *serial) {
     LL_USART_EnableIT_TXE(serial->usart);
     while (LL_USART_IsEnabledIT_TXE(serial->usart)) {};
