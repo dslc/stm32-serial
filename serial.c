@@ -40,6 +40,7 @@ struct serial {
 
 static serial_t ifs[SERIAL_N_INTERFACES];
 static uint8_t next_if = 0; // next interface
+static uint8_t rx_lock;
 
 serial_t *serial_init(USART_TypeDef *_usart) {
     if (next_if >= SERIAL_N_INTERFACES) {
@@ -111,6 +112,9 @@ int serial_available(serial_t *serial) {
 }
 
 int serial_read_bytes(serial_t *serial, char *dest, int max_len) {
+    if (rx_lock) {
+        return 0;
+    }
     serial_rx_buf_t *buf = &(serial->rx_buf);
     int len = buf->pos > max_len ? max_len : buf->pos;
     memcpy(dest, buf->data, len);
@@ -132,11 +136,13 @@ void serial_tx_callback(serial_t *serial) {
 
 void serial_rx_callback(serial_t *serial) {
     if (LL_USART_IsEnabledIT_RXNE(serial->usart) && LL_USART_IsActiveFlag_RXNE(serial->usart)) {
+        rx_lock = 1;
         serial_rx_buf_t *buf = &(serial->rx_buf);
         uint8_t byte = LL_USART_ReceiveData8(serial->usart);
         if (buf->pos < sizeof(buf->data)) {
             buf->data[buf->pos++] = byte;
         }
+        rx_lock = 0;
     }
     if (LL_USART_IsActiveFlag_ORE(serial->usart)) {
         LL_USART_ClearFlag_ORE(serial->usart);
