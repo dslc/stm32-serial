@@ -27,7 +27,8 @@ typedef struct {
 } serial_tx_buf_t;
 
 typedef struct {
-    int pos;
+    int rd;
+    int wr;
     char data[SERIAL_RX_BUF_SIZE];
 } serial_rx_buf_t;
 
@@ -40,7 +41,7 @@ struct serial {
 
 static serial_t ifs[SERIAL_N_INTERFACES];
 static uint8_t next_if = 0; // next interface
-static uint8_t rx_lock;
+static volatile uint8_t rx_lock;
 
 serial_t *serial_init(USART_TypeDef *_usart) {
     if (next_if >= SERIAL_N_INTERFACES) {
@@ -108,7 +109,12 @@ void serial_set_line_ending(serial_t *serial, serial_line_ending_t ending) {
 }
 
 int serial_available(serial_t *serial) {
-    return serial->rx_buf.pos;
+    serial_rx_buf *buf = &(serial->rx_buf);
+
+    if (buf->wr == buf->rd) { return 0; }
+    if (buf->wr > buf->rd) { return buf->wr - buf->rd; }
+
+    return buf->wr + sizeof(buf->data) - buf->rd;
 }
 
 int serial_read_bytes(serial_t *serial, char *dest, int max_len) {
@@ -116,9 +122,32 @@ int serial_read_bytes(serial_t *serial, char *dest, int max_len) {
         return 0;
     }
     serial_rx_buf_t *buf = &(serial->rx_buf);
-    int len = buf->pos > max_len ? max_len : buf->pos;
-    memcpy(dest, buf->data, len);
-    buf->pos = 0;
+
+    int available = serial_available(serial);
+
+    int len = max_len > available ? available : max_len;
+
+    if (len == 0) {
+        return 0;
+    }
+
+    char *src = buf->data[buf->rd];
+    int n_bytes_at_end = sizeof(buf->data) - buf->rd;
+    if (buf->wr > buf->rd || n_bytes_at_end >= len) {
+        memcpy(dest, src, len);
+        buf->rd += len;
+        if (buf->rd >= sizeof(buf->data)) {
+            buf->rd = 0;
+        }
+        return len;
+    }
+
+    // We need to copy some bytes from end of buffer and some from start of buffer ...
+    memcpy(dest, src, n_bytes_at_end);
+    int n_bytes_at_start = len - n_bytes_at_end;
+    memcpy(dest + n_bytes_at_end, buf->data, n_bytes_at_start);
+    buf->rd = n_bytes_at_start;
+
     return len;
 }
 
@@ -139,8 +168,9 @@ void serial_rx_callback(serial_t *serial) {
         rx_lock = 1;
         serial_rx_buf_t *buf = &(serial->rx_buf);
         uint8_t byte = LL_USART_ReceiveData8(serial->usart);
-        if (buf->pos < sizeof(buf->data)) {
-            buf->data[buf->pos++] = byte;
+        buf->data[buf->wr++] = byte;
+        if (buf->wr >= sizeof(buf->data)) {
+            buf->wr = 0;
         }
         rx_lock = 0;
     }
