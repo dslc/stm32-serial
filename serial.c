@@ -131,7 +131,7 @@ int serial_read_bytes(serial_t *serial, char *dest, int max_len) {
         return 0;
     }
 
-    char *src = buf->data[buf->rd];
+    char *src = buf->data + buf->rd;
     int n_bytes_at_end = sizeof(buf->data) - buf->rd;
     if (buf->wr > buf->rd || n_bytes_at_end >= len) {
         memcpy(dest, src, len);
