@@ -109,7 +109,7 @@ void serial_set_line_ending(serial_t *serial, serial_line_ending_t ending) {
 }
 
 int serial_available(serial_t *serial) {
-    serial_rx_buf *buf = &(serial->rx_buf);
+    serial_rx_buf_t *buf = &(serial->rx_buf);
 
     if (buf->wr == buf->rd) { return 0; }
     if (buf->wr > buf->rd) { return buf->wr - buf->rd; }
