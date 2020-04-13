@@ -72,6 +72,22 @@ void serial_set_baud_rate(serial_t *serial, uint32_t baud_rate) {
             LL_USART_OVERSAMPLING_16, baud_rate);
 }
 
+uint32_t serial_get_baud_rate(serial_t *serial) {
+    LL_RCC_ClocksTypeDef rcc_clocks;
+    uint32_t clock_frequency;
+
+    LL_RCC_GetSystemClocksFreq(&rcc_clocks);
+    if (serial->usart == USART1) {
+        clock_frequency = rcc_clocks.PCLK2_Frequency;
+    } else if (serial->usart == USART2) {
+        clock_frequency = rcc_clocks.PCLK1_Frequency;
+    } else if (serial->usart == USART3) {
+        clock_frequency = rcc_clocks.PCLK1_Frequency;
+    }
+
+    return LL_USART_GetBaudRate(serial->usart, clock_frequency, LL_USART_OVERSAMPLING_16);
+}
+
 static void on_tx_ready(serial_t *serial) {
     LL_USART_EnableIT_TXE(serial->usart);
     while (LL_USART_IsEnabledIT_TXE(serial->usart)) {};
