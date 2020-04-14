@@ -38,6 +38,8 @@ void serial_rx_callback(serial_t *serial);
 
 void serial_print(serial_t *serial, const char *msg);
 void serial_println(serial_t *serial, const char *msg);
+void serial_print_bytes(serial_t *serial, const uint8_t *data, int len);
+
 int serial_read_bytes(serial_t *serial, char *buf, int max_len);
 int serial_available(serial_t *serial);
 

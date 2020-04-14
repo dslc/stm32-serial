@@ -96,11 +96,7 @@ static void on_tx_ready(serial_t *serial) {
 void serial_print(serial_t *serial, const char *msg) {
     serial_tx_buf_t *buf = &(serial->tx_buf);
     int len = strlen(msg);
-    len = len > sizeof(buf->data) ? sizeof(buf->data) : len;
-    memcpy(buf->data, msg, len);
-    buf->len = len;
-    buf->pos = 0;
-    on_tx_ready(serial);
+    serial_print_bytes(serial, msg, len);
 }
 
 void serial_println(serial_t *serial, const char *msg) {
@@ -118,6 +114,15 @@ void serial_println(serial_t *serial, const char *msg) {
         default:
             break;
     }
+}
+
+void serial_print_bytes(serial_t *serial, const uint8_t *data, int len) {
+    serial_tx_buf_t *buf = &(serial->tx_buf);
+    len = len > sizeof(buf->data) ? sizeof(buf->data) : len;
+    memcpy(buf->data, data, len);
+    buf->len = len;
+    buf->pos = 0;
+    on_tx_ready(serial);
 }
 
 void serial_set_line_ending(serial_t *serial, serial_line_ending_t ending) {
